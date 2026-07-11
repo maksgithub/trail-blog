@@ -5,6 +5,21 @@ import { getSupabase } from "@/lib/supabase";
 import type { Comment } from "@/lib/types";
 import { useLang } from "@/lib/i18n";
 
+const AVATAR_COLORS = [
+  "bg-emerald-600",
+  "bg-sky-600",
+  "bg-amber-600",
+  "bg-rose-600",
+  "bg-violet-600",
+  "bg-teal-600",
+];
+
+function avatarColor(name: string) {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.codePointAt(0)!) | 0;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 export default function Comments({ postId }: { postId: string }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [name, setName] = useState("");
@@ -53,25 +68,41 @@ export default function Comments({ postId }: { postId: string }) {
   return (
     <section>
       <h2 className="text-xl font-semibold mb-4">
-        {t("comments.title")} ({comments.length})
+        {t("comments.title")}{" "}
+        <span className="text-gray-400 font-normal">({comments.length})</span>
       </h2>
 
       {comments.length === 0 && (
         <p className="text-gray-500 text-sm mb-4">{t("comments.empty")}</p>
       )}
 
-      <ul className="space-y-4 mb-6">
+      <ul className="space-y-3 mb-6">
         {comments.map((c) => (
-          <li key={c.id} className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="font-semibold">{c.author_name}</span>
-              <span className="text-gray-400">
-                {new Date(c.created_at).toLocaleDateString(
-                  lang === "uk" ? "uk-UA" : "en-GB"
-                )}
-              </span>
+          <li
+            key={c.id}
+            className="bg-white border border-[var(--ig-border)] rounded-xl p-4 flex gap-3 fade-up"
+          >
+            <div
+              className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold ${avatarColor(
+                c.author_name
+              )}`}
+              aria-hidden="true"
+            >
+              {c.author_name.trim().charAt(0).toUpperCase()}
             </div>
-            <p className="text-sm whitespace-pre-wrap">{c.content}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex justify-between items-baseline gap-2 text-sm mb-1">
+                <span className="font-semibold truncate">{c.author_name}</span>
+                <span className="text-gray-400 text-xs shrink-0">
+                  {new Date(c.created_at).toLocaleDateString(
+                    lang === "uk" ? "uk-UA" : "en-GB"
+                  )}
+                </span>
+              </div>
+              <p className="text-sm whitespace-pre-wrap break-words">
+                {c.content}
+              </p>
+            </div>
           </li>
         ))}
       </ul>
@@ -83,7 +114,7 @@ export default function Comments({ postId }: { postId: string }) {
           placeholder={t("comments.name")}
           maxLength={50}
           required
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+          className="input-field"
         />
         <textarea
           value={text}
@@ -92,13 +123,9 @@ export default function Comments({ postId }: { postId: string }) {
           maxLength={2000}
           rows={3}
           required
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+          className="input-field resize-y"
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="bg-[var(--forest)] text-white px-5 py-2 rounded-lg hover:bg-[var(--forest-dark)] disabled:opacity-50 cursor-pointer"
-        >
+        <button type="submit" disabled={busy} className="btn-primary">
           {t("comments.send")}
         </button>
       </form>

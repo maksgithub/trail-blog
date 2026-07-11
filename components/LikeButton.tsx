@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { getFingerprint } from "@/lib/fingerprint";
 import { useLang } from "@/lib/i18n";
+import { HeartIcon } from "@/components/icons";
 
 export default function LikeButton({ postId }: { postId: string }) {
   const [count, setCount] = useState<number>(0);
@@ -47,11 +48,12 @@ export default function LikeButton({ postId }: { postId: string }) {
     <button
       onClick={toggle}
       disabled={busy}
-      className="flex items-center gap-2 cursor-pointer"
+      className="flex items-center gap-2 cursor-pointer p-1.5 -m-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-60"
       aria-label={t("likes.like")}
+      aria-pressed={liked}
     >
-      <span className={`text-2xl ${pop ? "heart-pop" : ""}`}>
-        {liked ? "❤️" : "🤍"}
+      <span className={pop ? "heart-pop inline-flex" : "inline-flex"}>
+        <HeartIcon className="w-6 h-6" filled={liked} />
       </span>
       <span className="text-sm font-semibold">
         {count} {t("likes.count")}

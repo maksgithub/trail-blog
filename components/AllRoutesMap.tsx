@@ -58,7 +58,5 @@ export default function AllRoutesMap({ posts }: { posts: Post[] }) {
     };
   }, [posts, lang]);
 
-  return (
-    <div ref={ref} style={{ height: "70vh" }} className="rounded-xl shadow" />
-  );
+  return <div ref={ref} style={{ height: "70vh" }} />;
 }

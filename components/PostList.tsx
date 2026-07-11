@@ -7,6 +7,7 @@ import { useLang, pick } from "@/lib/i18n";
 import { getSupabase } from "@/lib/supabase";
 import { getFingerprint } from "@/lib/fingerprint";
 import RouteMap from "@/components/RouteMap";
+import { HeartIcon, CommentIcon, ShareIcon } from "@/components/icons";
 
 const CATS: (Category | "all")[] = ["all", "hike", "bike", "camp", "other"];
 const CAT_EMOJI: Record<string, string> = {
@@ -34,6 +35,7 @@ function FeedCard({
 }) {
   const { lang, t } = useLang();
   const [pop, setPop] = useState(false);
+  const [burst, setBurst] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const title = pick(lang, post.title_uk, post.title_en);
@@ -41,6 +43,19 @@ function FeedCard({
   const liked = counts.likedByMe.has(post.id);
   const likeCount = counts.likes[post.id] ?? 0;
   const commentCount = counts.comments[post.id] ?? 0;
+
+  const like = () => {
+    onToggleLike(post.id);
+    setPop(true);
+    setTimeout(() => setPop(false), 350);
+  };
+
+  // double-tap on the photo likes (never unlikes), like Instagram
+  const doubleTapLike = () => {
+    if (!liked) onToggleLike(post.id);
+    setBurst(true);
+    setTimeout(() => setBurst(false), 900);
+  };
 
   const share = async () => {
     const url = `${window.location.origin}/post/${post.slug}`;
@@ -58,7 +73,7 @@ function FeedCard({
   };
 
   return (
-    <article className="bg-white border border-[var(--ig-border)] rounded-lg overflow-hidden">
+    <article className="feed-card fade-up">
       {/* header */}
       <div className="flex items-center gap-3 px-3.5 py-2.5">
         <div className="story-ring rounded-full p-[2px]">
@@ -79,52 +94,79 @@ function FeedCard({
       </div>
 
       {/* media */}
-      <Link href={`/post/${post.slug}`} className="block relative">
-        {post.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.cover_url}
-            alt={title}
-            className="w-full aspect-square object-cover"
-          />
-        ) : post.route?.length || post.waypoints?.length ? (
-          <div className="aspect-square pointer-events-none">
-            <RouteMap
-              route={post.route}
-              waypoints={post.waypoints}
-              category={post.category}
-              height="100%"
-              interactive={false}
+      <Link
+        href={`/post/${post.slug}`}
+        className="block relative group"
+        onDoubleClick={(e) => {
+          e.preventDefault();
+          doubleTapLike();
+        }}
+      >
+        <div className="overflow-hidden">
+          {post.cover_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={post.cover_url}
+              alt={title}
+              loading="lazy"
+              className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
-          </div>
-        ) : (
-          <div className="aspect-square bg-gradient-to-br from-[var(--forest)] to-[var(--forest-dark)] flex items-center justify-center text-7xl">
-            {CAT_EMOJI[post.category]}
+          ) : post.route?.length || post.waypoints?.length ? (
+            <div className="aspect-square pointer-events-none">
+              <RouteMap
+                route={post.route}
+                waypoints={post.waypoints}
+                category={post.category}
+                height="100%"
+                interactive={false}
+              />
+            </div>
+          ) : (
+            <div className="aspect-square bg-gradient-to-br from-[var(--forest)] to-[var(--forest-dark)] flex items-center justify-center text-7xl">
+              {CAT_EMOJI[post.category]}
+            </div>
+          )}
+        </div>
+        {burst && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <HeartIcon className="w-24 h-24 heart-burst drop-shadow-lg" filled />
           </div>
         )}
       </Link>
 
       {/* actions */}
-      <div className="px-3.5 pt-3 pb-1 flex items-center gap-4 text-2xl">
+      <div className="px-3 pt-2.5 pb-1 flex items-center gap-1">
         <button
-          onClick={() => {
-            onToggleLike(post.id);
-            setPop(true);
-            setTimeout(() => setPop(false), 350);
-          }}
-          className={`cursor-pointer ${pop ? "heart-pop" : ""}`}
+          onClick={like}
+          className={`p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
+            pop ? "heart-pop" : ""
+          }`}
           aria-label={t("likes.like")}
+          aria-pressed={liked}
         >
-          {liked ? "❤️" : "🤍"}
+          <HeartIcon
+            className={`w-6 h-6 transition-colors ${liked ? "" : "hover:text-gray-500"}`}
+            filled={liked}
+          />
         </button>
-        <Link href={`/post/${post.slug}#comments`} aria-label={t("comments.title")}>
-          💬
+        <Link
+          href={`/post/${post.slug}#comments`}
+          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label={t("comments.title")}
+        >
+          <CommentIcon className="w-6 h-6" />
         </Link>
-        <button onClick={share} className="cursor-pointer" aria-label="Share">
-          📤
+        <button
+          onClick={share}
+          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+          aria-label="Share"
+        >
+          <ShareIcon className="w-6 h-6" />
         </button>
         {copied && (
-          <span className="text-xs text-gray-500">{t("share.copied")}</span>
+          <span className="text-xs text-[var(--forest)] font-medium fade-up">
+            {t("share.copied")}
+          </span>
         )}
       </div>
 
@@ -140,19 +182,19 @@ function FeedCard({
         </div>
         <Link
           href={`/post/${post.slug}`}
-          className="text-[var(--forest)] font-medium inline-block"
+          className="text-[var(--forest)] font-medium inline-block hover:text-[var(--forest-dark)] transition-colors"
         >
           {t("post.readMore")} →
         </Link>
         {commentCount > 0 && (
           <Link
             href={`/post/${post.slug}#comments`}
-            className="text-gray-500 block"
+            className="text-gray-500 block hover:text-gray-700 transition-colors"
           >
             {t("comments.view")} ({commentCount})
           </Link>
         )}
-        <div className="text-[11px] text-gray-400 uppercase pt-1">
+        <div className="text-[11px] text-gray-400 uppercase tracking-wide pt-1">
           {new Date(post.created_at).toLocaleDateString(
             lang === "uk" ? "uk-UA" : "en-GB",
             { day: "numeric", month: "long", year: "numeric" }
@@ -224,10 +266,11 @@ export default function PostList({ posts }: { posts: Post[] }) {
           <button
             key={c}
             onClick={() => setCat(c)}
-            className="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+            className="flex flex-col items-center gap-1 cursor-pointer shrink-0 group"
+            aria-pressed={cat === c}
           >
             <div
-              className={`rounded-full p-[2.5px] ${
+              className={`rounded-full p-[2.5px] transition-transform group-hover:scale-105 group-active:scale-95 ${
                 cat === c ? "story-ring" : "bg-[var(--ig-border)]"
               }`}
             >
@@ -237,7 +280,11 @@ export default function PostList({ posts }: { posts: Post[] }) {
                 </div>
               </div>
             </div>
-            <span className="text-xs text-gray-700">
+            <span
+              className={`text-xs transition-colors ${
+                cat === c ? "text-[var(--ink)] font-semibold" : "text-gray-600"
+              }`}
+            >
               {t(`cat.${c}` as Parameters<typeof t>[0])}
             </span>
           </button>
@@ -245,10 +292,13 @@ export default function PostList({ posts }: { posts: Post[] }) {
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-gray-500 py-16">{t("empty.posts")}</p>
+        <div className="text-center py-16 fade-up">
+          <div className="text-5xl mb-3">🌲</div>
+          <p className="text-gray-500">{t("empty.posts")}</p>
+        </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-7">
         {filtered.map((post) => (
           <FeedCard
             key={post.id}
