@@ -85,11 +85,13 @@ export default function PostView({ post }: { post: Post }) {
         </section>
       )}
 
-      <div className="flex items-center gap-4 border-t border-b border-gray-200 py-4 mb-8">
+      <div className="flex items-center gap-4 border-t border-b border-[var(--ig-border)] py-4 mb-8">
         <LikeButton postId={post.id} />
       </div>
 
-      <Comments postId={post.id} />
+      <div id="comments">
+        <Comments postId={post.id} />
+      </div>
     </article>
   );
 }

@@ -9,6 +9,7 @@ interface Props {
   waypoints?: Waypoint[] | null;
   category?: string;
   height?: string;
+  interactive?: boolean;
 }
 
 export default function RouteMap({
@@ -16,6 +17,7 @@ export default function RouteMap({
   waypoints,
   category = "hike",
   height = "420px",
+  interactive = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -26,7 +28,14 @@ export default function RouteMap({
       const L = (await import("leaflet")).default;
       if (cancelled || !ref.current || mapRef.current) return;
 
-      const map = L.map(ref.current, { scrollWheelZoom: false });
+      const map = L.map(ref.current, {
+        scrollWheelZoom: false,
+        dragging: interactive,
+        zoomControl: interactive,
+        doubleClickZoom: interactive,
+        touchZoom: interactive,
+        keyboard: interactive,
+      });
       mapRef.current = map;
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -73,7 +82,7 @@ export default function RouteMap({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [route, waypoints, category]);
+  }, [route, waypoints, category, interactive]);
 
-  return <div ref={ref} style={{ height }} className="rounded-xl shadow" />;
+  return <div ref={ref} style={{ height }} className={interactive ? "rounded-xl shadow" : ""} />;
 }

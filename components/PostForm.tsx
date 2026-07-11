@@ -53,6 +53,64 @@ export default function PostForm({ post }: { post?: Post }) {
   const [coverUrl, setCoverUrl] = useState(post?.cover_url ?? "");
   const [published, setPublished] = useState(post?.published ?? false);
   const [tab, setTab] = useState<"uk" | "en">("uk");
+  const [aiIdea, setAiIdea] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+
+  const runAi = async () => {
+    if (!aiIdea.trim() || aiBusy) return;
+    setAiBusy(true);
+    setError("");
+    try {
+      const { data } = await getSupabase().auth.getSession();
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ idea: aiIdea }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error ?? "Помилка AI-асистента");
+      } else {
+        if (result.title_uk) {
+          setTitleUk(result.title_uk);
+          setSlug(slugify(result.title_uk));
+        }
+        if (result.title_en) setTitleEn(result.title_en);
+        if (result.excerpt_uk) setExcerptUk(result.excerpt_uk);
+        if (result.excerpt_en) setExcerptEn(result.excerpt_en);
+        if (result.content_uk) setContentUk(result.content_uk);
+        if (result.content_en) setContentEn(result.content_en);
+        if (["hike", "bike", "camp", "other"].includes(result.category))
+          setCategory(result.category);
+        if (result.days) setDays(String(result.days));
+        if (Array.isArray(result.route) && result.route.length > 1)
+          setRoute(
+            result.route.filter(
+              (p: unknown): p is LatLng =>
+                Array.isArray(p) &&
+                p.length === 2 &&
+                typeof p[0] === "number" &&
+                typeof p[1] === "number"
+            )
+          );
+        if (Array.isArray(result.waypoints))
+          setWaypoints(
+            result.waypoints.filter(
+              (w: Waypoint) =>
+                typeof w?.lat === "number" &&
+                typeof w?.lng === "number" &&
+                typeof w?.title === "string"
+            )
+          );
+      }
+    } catch (e) {
+      setError(`Помилка AI-асистента: ${(e as Error).message}`);
+    }
+    setAiBusy(false);
+  };
 
   const uploadFiles = async (files: FileList, asCover: boolean) => {
     setUploadBusy(true);
@@ -118,6 +176,35 @@ export default function PostForm({ post }: { post?: Post }) {
       <h1 className="text-2xl font-bold">
         {post ? "Редагувати маршрут" : "Новий маршрут"}
       </h1>
+
+      {/* AI-асистент */}
+      <section className="rounded-xl border-2 border-dashed border-violet-300 bg-violet-50 p-4 space-y-3">
+        <h2 className="font-semibold flex items-center gap-2">
+          ✨ AI-асистент
+          <span className="text-xs font-normal text-gray-500">
+            опиши ідею — отримаєш назву, тексти обома мовами й маршрут на карті
+          </span>
+        </h2>
+        <textarea
+          value={aiIdea}
+          onChange={(e) => setAiIdea(e.target.value)}
+          placeholder="Напр.: «Триденний похід Чорногорським хребтом від Заросляка до Попа Івана, з ночівлями біля озер» або «Веломаршрут на вихідні навколо Синевиру»"
+          rows={3}
+          className={`${"w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"}`}
+        />
+        <button
+          type="button"
+          onClick={runAi}
+          disabled={aiBusy || !aiIdea.trim()}
+          className="bg-violet-600 text-white px-5 py-2 rounded-lg hover:bg-violet-700 disabled:opacity-50 cursor-pointer"
+        >
+          {aiBusy ? "🪄 Генерую… (до 30 сек)" : "✨ Згенерувати чернетку"}
+        </button>
+        <p className="text-xs text-gray-500">
+          Маршрут AI малює приблизно — обов&apos;язково перевір і підправ точки
+          на карті нижче. Все згенероване можна редагувати.
+        </p>
+      </section>
 
       {/* Мовні вкладки */}
       <div className="flex gap-2">

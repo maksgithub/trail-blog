@@ -2,21 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { getFingerprint } from "@/lib/fingerprint";
 import { useLang } from "@/lib/i18n";
-
-function getFingerprint(): string {
-  let fp = localStorage.getItem("visitor_fp");
-  if (!fp) {
-    fp = crypto.randomUUID();
-    localStorage.setItem("visitor_fp", fp);
-  }
-  return fp;
-}
 
 export default function LikeButton({ postId }: { postId: string }) {
   const [count, setCount] = useState<number>(0);
   const [liked, setLiked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pop, setPop] = useState(false);
   const { t } = useLang();
 
   useEffect(() => {
@@ -36,6 +29,8 @@ export default function LikeButton({ postId }: { postId: string }) {
   const toggle = async () => {
     if (busy) return;
     setBusy(true);
+    setPop(true);
+    setTimeout(() => setPop(false), 350);
     const supabase = getSupabase();
     const { data, error } = await supabase.rpc("toggle_like", {
       p_post_id: postId,
@@ -52,15 +47,14 @@ export default function LikeButton({ postId }: { postId: string }) {
     <button
       onClick={toggle}
       disabled={busy}
-      className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition ${
-        liked
-          ? "bg-red-100 text-red-700"
-          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-      }`}
+      className="flex items-center gap-2 cursor-pointer"
+      aria-label={t("likes.like")}
     >
-      <span>{liked ? "❤️" : "🤍"}</span>
-      <span className="text-sm font-medium">
-        {t("likes.like")} · {count}
+      <span className={`text-2xl ${pop ? "heart-pop" : ""}`}>
+        {liked ? "❤️" : "🤍"}
+      </span>
+      <span className="text-sm font-semibold">
+        {count} {t("likes.count")}
       </span>
     </button>
   );
