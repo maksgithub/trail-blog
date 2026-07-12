@@ -3,8 +3,7 @@
 import { useEffect, useRef } from "react";
 import { marked } from "marked";
 import type { Post } from "@/lib/types";
-import RouteMap from "@/components/RouteMap";
-import RouteStops from "@/components/RouteStops";
+import RouteExplorer from "@/components/RouteExplorer";
 import LikeButton from "@/components/LikeButton";
 import Comments from "@/components/Comments";
 import { useLang, pick } from "@/lib/i18n";
@@ -93,15 +92,12 @@ export default function PostView({ post }: { post: Post }) {
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-3">{t("post.route")}</h2>
           <div className="rounded-2xl overflow-hidden shadow-md border border-[var(--ig-border)]">
-            <RouteMap
+            <RouteExplorer
               route={post.route}
               waypoints={post.waypoints}
               category={post.category}
             />
           </div>
-          {post.waypoints && post.waypoints.length > 0 && (
-            <RouteStops waypoints={post.waypoints} category={post.category} />
-          )}
         </section>
       ) : null}
 
