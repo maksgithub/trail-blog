@@ -122,6 +122,19 @@ body {
 
 /* ---------- leaflet ---------- */
 
+.locate-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: #262626;
+}
+.locate-btn--busy svg {
+  animation: locate-spin 1s linear infinite;
+}
+@keyframes locate-spin {
+  to { transform: rotate(360deg); }
+}
+
 .leaflet-container {
   width: 100%;
   height: 100%;
