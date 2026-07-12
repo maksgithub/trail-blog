@@ -161,6 +161,25 @@ body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
+/* нумерований бейдж точки маршруту */
+.marker-badge-wrap {
+  background: none;
+  border: none;
+}
+.marker-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
 /* ---------- prose ---------- */
 
 .prose-content {

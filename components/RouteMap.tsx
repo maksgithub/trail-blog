@@ -70,16 +70,27 @@ export default function RouteMap({
           .bindPopup("Фініш / Finish");
       }
 
-      for (const wp of waypoints ?? []) {
+      (waypoints ?? []).forEach((wp, i) => {
         const m = L.marker([wp.lat, wp.lng], {
-          icon: L.divIcon({ className: "marker-photo", iconSize: [16, 16] }),
+          icon: L.divIcon({
+            className: "marker-badge-wrap",
+            html: `<div class="marker-badge" style="background:${color}">${i + 1}</div>`,
+            iconSize: [26, 26],
+            iconAnchor: [13, 13],
+            popupAnchor: [0, -14],
+          }),
+          // бейджі поверх крапок старту/фінішу
+          zIndexOffset: 100,
         }).addTo(map);
         const img = wp.photo_url
           ? `<img src="${wp.photo_url}" style="width:180px;border-radius:8px;margin-top:6px" />`
           : "";
-        m.bindPopup(`<b>${wp.title}</b>${img}`);
+        const gmaps = `https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`;
+        m.bindPopup(
+          `<b>${wp.title}</b>${img}<br/><a href="${gmaps}" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>`
+        );
         bounds.extend([wp.lat, wp.lng]);
-      }
+      });
 
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
       else map.setView(WORLD_VIEW.center, WORLD_VIEW.zoom);
