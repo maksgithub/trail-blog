@@ -124,6 +124,15 @@ export async function POST(req: Request) {
 
   if (!geminiRes.ok) {
     const errText = await geminiRes.text();
+    if (geminiRes.status === 429) {
+      return NextResponse.json(
+        {
+          error:
+            "Кредити Gemini вичерпано або перевищено ліміт запитів. Поповни білінг на https://ai.studio/projects чи спробуй пізніше. Пост можна створити й без AI — заповни поля вручну або попроси Claude через скіл /add-route.",
+        },
+        { status: 502 }
+      );
+    }
     return NextResponse.json(
       { error: `Gemini API: ${geminiRes.status} ${errText.slice(0, 300)}` },
       { status: 502 }
