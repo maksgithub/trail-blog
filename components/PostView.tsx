@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { marked } from "marked";
 import type { Post } from "@/lib/types";
 import RouteMap from "@/components/RouteMap";
@@ -19,6 +20,32 @@ export default function PostView({ post }: { post: Post }) {
   const { lang, t } = useLang();
   const title = pick(lang, post.title_uk, post.title_en);
   const content = pick(lang, post.content_uk, post.content_en);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // чекліст у Markdown (- [ ] пункт) стає інтерактивним:
+  // стан зберігається в localStorage для кожного поста
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+    const boxes = Array.from(
+      root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+    );
+    if (boxes.length === 0) return;
+    const key = `checklist:${post.id}`;
+    let saved: boolean[] = [];
+    try {
+      saved = JSON.parse(localStorage.getItem(key) ?? "[]");
+    } catch {
+      /* зіпсовані дані — почнемо з чистого списку */
+    }
+    boxes.forEach((box, i) => {
+      box.disabled = false;
+      if (typeof saved[i] === "boolean") box.checked = saved[i];
+      box.addEventListener("change", () => {
+        localStorage.setItem(key, JSON.stringify(boxes.map((b) => b.checked)));
+      });
+    });
+  }, [post.id, content]);
 
   return (
     <article className="max-w-3xl mx-auto fade-up">
@@ -76,6 +103,7 @@ export default function PostView({ post }: { post: Post }) {
 
       {content && (
         <div
+          ref={contentRef}
           className="prose-content mb-8"
           dangerouslySetInnerHTML={{ __html: marked.parse(content) as string }}
         />
