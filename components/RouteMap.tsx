@@ -5,6 +5,7 @@ import type { Waypoint } from "@/lib/types";
 import { CATEGORY_COLORS, LatLng } from "@/lib/geo";
 import { setupBaseLayers } from "@/lib/map-layers";
 import { WORLD_VIEW } from "@/lib/map-config";
+import { snapForDisplay } from "@/lib/routing";
 
 /** API для зовнішніх віджетів (картки точок над картою) */
 export interface RouteMapApi {
@@ -69,6 +70,13 @@ export default function RouteMap({
           lineCap: "round",
         }).addTo(map);
         bounds.extend(line.getBounds());
+        // опорні точки з'єднуємо по реальних дорогах і стежках (OSRM);
+        // поки роутинг відповідає, показуємо прямі лінії як прев'ю
+        snapForDisplay(route, category).then((snapped) => {
+          if (snapped && !cancelled && mapRef.current) {
+            line.setLatLngs(snapped);
+          }
+        });
         const start = route[0];
         const end = route[route.length - 1];
         L.marker(start, {
