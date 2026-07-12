@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
 import { CATEGORY_COLORS } from "@/lib/geo";
+import { snapForDisplay } from "@/lib/routing";
 import { addLocateControl } from "@/lib/leaflet-locate";
 import { setupBaseLayers } from "@/lib/map-layers";
 import { WORLD_VIEW } from "@/lib/map-config";
@@ -58,6 +59,12 @@ export default function AllRoutesMap({ posts, showHeat = false }: Props) {
             .bindPopup(popup);
           line.on("mouseover", () => line.setStyle({ weight: 6 }));
           line.on("mouseout", () => line.setStyle({ weight: 4 }));
+          // з'єднуємо опорні точки по реальних дорогах/стежках
+          snapForDisplay(post.route, post.category).then((snapped) => {
+            if (snapped && !cancelled && mapRef.current) {
+              line.setLatLngs(snapped);
+            }
+          });
           bounds.extend(line.getBounds());
           for (const [lat, lng] of post.route) heatPoints.push([lat, lng, 0.6]);
         } else if (post.waypoints?.length) {

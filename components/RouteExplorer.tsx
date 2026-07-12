@@ -65,8 +65,8 @@ export default function RouteExplorer({
       />
 
       {wps.length > 0 && (
-        <div className="absolute top-2 left-0 right-0 z-[1000] pointer-events-none">
-          <div className="stops-strip flex gap-2 overflow-x-auto px-2 pb-1.5 snap-x pointer-events-auto">
+        <div className="absolute top-0 left-0 right-0 z-[1000] pointer-events-none">
+          <div className="stops-strip flex gap-2 overflow-x-auto px-2 pt-2.5 pb-1.5 snap-x pointer-events-auto">
             {wps.map((wp, i) => (
               <div
                 key={i}
@@ -83,10 +83,10 @@ export default function RouteExplorer({
                     apiRef.current?.focusWaypoint(i);
                   }
                 }}
-                className={`snap-start shrink-0 flex items-center gap-2.5 rounded-xl bg-white/95 backdrop-blur px-3 py-2 shadow-md cursor-pointer transition-all select-none border ${
+                className={`snap-start shrink-0 flex items-center gap-2.5 rounded-xl bg-white/95 backdrop-blur pl-2.5 pr-1.5 py-2 shadow-md cursor-pointer transition-shadow select-none border ${
                   active === i
                     ? "border-transparent ring-2 shadow-lg"
-                    : "border-[var(--ig-border)] hover:shadow-lg hover:-translate-y-0.5"
+                    : "border-[var(--ig-border)] hover:shadow-lg"
                 }`}
                 style={
                   active === i
@@ -100,20 +100,21 @@ export default function RouteExplorer({
                 >
                   {i + 1}
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-xs font-semibold max-w-[150px] truncate">
-                    {wp.title}
-                  </span>
-                  <a
-                    href={gmapsPointUrl(wp)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 transition-colors"
-                  >
-                    Google Maps <ExternalIcon />
-                  </a>
+                <span className="block text-xs font-semibold max-w-[150px] truncate">
+                  {wp.title}
                 </span>
+                {/* маленька окрема зона відкриття в Google Maps */}
+                <a
+                  href={gmapsPointUrl(wp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  title={t("route.open")}
+                  aria-label={t("route.open")}
+                  className="shrink-0 p-1 rounded-md text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                >
+                  <ExternalIcon className="w-3.5 h-3.5" />
+                </a>
               </div>
             ))}
 

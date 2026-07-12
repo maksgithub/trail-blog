@@ -7,10 +7,17 @@ import type { LatLng } from "@/lib/geo";
  */
 const OSRM_BASE = "https://routing.openstreetmap.de";
 
-export type RoutingProfile = "foot" | "bike";
+export type RoutingProfile = "foot" | "bike" | "car";
 
 export function profileForCategory(category?: string): RoutingProfile {
   return category === "bike" ? "bike" : "foot";
+}
+
+/** Профіль для відображення готового маршруту: авто-подорожі — по дорогах */
+export function displayProfileForCategory(category?: string): RoutingProfile {
+  if (category === "bike") return "bike";
+  if (category === "hike") return "foot";
+  return "car"; // camp / other — зазвичай доїзд автомобілем
 }
 
 interface OsrmResponse {
@@ -43,7 +50,9 @@ export async function snapRoute(
   }
 
   const coords = via.map(([lat, lng]) => `${lng},${lat}`).join(";");
-  const url = `${OSRM_BASE}/routed-${profile}/route/v1/${profile}/${coords}?overview=full&geometries=geojson&steps=false&continue_straight=false`;
+  // сервіс car живе на routed-car, а сегмент профілю в URL — driving
+  const urlProfile = profile === "car" ? "driving" : profile;
+  const url = `${OSRM_BASE}/routed-${profile}/route/v1/${urlProfile}/${coords}?overview=full&geometries=geojson&steps=false&continue_straight=false`;
 
   try {
     const res = await fetch(url, { signal });
@@ -58,4 +67,43 @@ export async function snapRoute(
   } catch {
     return null;
   }
+}
+
+function routeHash(points: LatLng[], profile: string): string {
+  const str = profile + JSON.stringify(points);
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) | 0;
+  return `snap:${(h >>> 0).toString(36)}`;
+}
+
+/**
+ * Снапінг збереженого маршруту до реальних доріг/стежок для ВІДОБРАЖЕННЯ
+ * (виконується в браузері відвідувача). Результат кешується в sessionStorage,
+ * щоб не смикати OSRM на кожен перегляд. Якщо роутинг недоступний —
+ * повертає null і викликач малює оригінальні точки.
+ */
+export async function snapForDisplay(
+  points: LatLng[],
+  category?: string
+): Promise<LatLng[] | null> {
+  if (typeof window === "undefined" || points.length < 2) return null;
+  const profile = displayProfileForCategory(category);
+  const key = routeHash(points, profile);
+  try {
+    const cached = sessionStorage.getItem(key);
+    if (cached) {
+      const parsed = JSON.parse(cached) as LatLng[] | null;
+      return Array.isArray(parsed) && parsed.length > 1 ? parsed : null;
+    }
+  } catch {
+    /* приватний режим — просто без кешу */
+  }
+  const snapped = await snapRoute(points, profile);
+  try {
+    // кешуємо і невдачу ("null"), щоб не бомбити недоступний сервіс
+    sessionStorage.setItem(key, JSON.stringify(snapped));
+  } catch {
+    /* ігноруємо переповнення сховища */
+  }
+  return snapped;
 }
