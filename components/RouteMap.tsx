@@ -84,5 +84,5 @@ export default function RouteMap({
     };
   }, [route, waypoints, category, interactive]);
 
-  return <div ref={ref} style={{ height }} className={interactive ? "rounded-xl shadow" : ""} />;
+  return <div ref={ref} style={{ height }} />;
 }

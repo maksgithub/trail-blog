@@ -55,11 +55,13 @@ export default function PostForm({ post }: { post?: Post }) {
   const [tab, setTab] = useState<"uk" | "en">("uk");
   const [aiIdea, setAiIdea] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
+  const [aiNotice, setAiNotice] = useState("");
 
   const runAi = async () => {
     if (!aiIdea.trim() || aiBusy) return;
     setAiBusy(true);
     setError("");
+    setAiNotice("");
     try {
       const { data } = await getSupabase().auth.getSession();
       const res = await fetch("/api/ai", {
@@ -105,6 +107,15 @@ export default function PostForm({ post }: { post?: Post }) {
                 typeof w?.title === "string"
             )
           );
+        if (Array.isArray(result.route) && result.route.length > 1) {
+          setAiNotice(
+            result.route_snapped
+              ? "✅ Чернетку згенеровано, маршрут прокладено по реальних стежках. Перевір і підправ на карті."
+              : "⚠️ Чернетку згенеровано, але маршрут приблизний (роутинг недоступний). Скористайся кнопкою «Вирівняти по стежках» на карті."
+          );
+        } else {
+          setAiNotice("✅ Чернетку згенеровано. Домалюй маршрут на карті нижче.");
+        }
       }
     } catch (e) {
       setError(`Помилка AI-асистента: ${(e as Error).message}`);
@@ -200,9 +211,11 @@ export default function PostForm({ post }: { post?: Post }) {
         >
           {aiBusy ? "🪄 Генерую… (до 30 сек)" : "✨ Згенерувати чернетку"}
         </button>
+        {aiNotice && <p className="text-sm">{aiNotice}</p>}
         <p className="text-xs text-gray-500">
-          Маршрут AI малює приблизно — обов&apos;язково перевір і підправ точки
-          на карті нижче. Все згенероване можна редагувати.
+          Опорні точки від AI автоматично прокладаються по реальних стежках і
+          дорогах OpenStreetMap — але обов&apos;язково перевір результат на
+          карті нижче. Все згенероване можна редагувати.
         </p>
       </section>
 
@@ -302,6 +315,7 @@ export default function PostForm({ post }: { post?: Post }) {
         <RouteEditor
           route={route}
           waypoints={waypoints}
+          category={category}
           onRouteChange={setRoute}
           onWaypointsChange={setWaypoints}
         />

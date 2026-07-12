@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
 import { CATEGORY_COLORS } from "@/lib/geo";
+import { addLocateControl } from "@/lib/leaflet-locate";
 import { useLang, pick } from "@/lib/i18n";
 
-export default function AllRoutesMap({ posts }: { posts: Post[] }) {
+interface Props {
+  posts: Post[];
+  showHeat?: boolean;
+}
+
+export default function AllRoutesMap({ posts, showHeat = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
+  const heatRef = useRef<import("leaflet").Layer | null>(null);
+  const routesRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const [ready, setReady] = useState(false);
   const { lang } = useLang();
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const L = (await import("leaflet")).default;
+      // leaflet.heat — класичний плагін, шукає глобальний L
+      (window as unknown as { L: typeof L }).L = L;
+      await import("leaflet.heat");
       if (cancelled || !ref.current || mapRef.current) return;
 
       const map = L.map(ref.current);
@@ -23,42 +35,80 @@ export default function AllRoutesMap({ posts }: { posts: Post[] }) {
         maxZoom: 19,
       }).addTo(map);
 
+      addLocateControl(L, map);
+
+      const routes = L.layerGroup().addTo(map);
+      routesRef.current = routes;
       const bounds = L.latLngBounds([]);
+      const heatPoints: [number, number, number][] = [];
 
       for (const post of posts) {
         const color = CATEGORY_COLORS[post.category] ?? "#2d5a3d";
         const title = pick(lang, post.title_uk, post.title_en);
-        const popup = `<b>${title}</b><br/><a href="/post/${post.slug}">→</a>`;
+        const popup = `<a href="/post/${post.slug}" style="font-weight:600;color:${color}">${title} →</a>`;
 
         if (post.route && post.route.length > 1) {
-          const line = L.polyline(post.route, { color, weight: 4 })
-            .addTo(map)
+          const line = L.polyline(post.route, {
+            color,
+            weight: 4,
+            opacity: 0.9,
+          })
+            .addTo(routes)
             .bindPopup(popup);
-          line.on("click", () => line.openPopup());
+          line.on("mouseover", () => line.setStyle({ weight: 6 }));
+          line.on("mouseout", () => line.setStyle({ weight: 4 }));
           bounds.extend(line.getBounds());
+          for (const [lat, lng] of post.route) heatPoints.push([lat, lng, 0.6]);
         } else if (post.waypoints?.length) {
           const wp = post.waypoints[0];
           L.marker([wp.lat, wp.lng], {
             icon: L.divIcon({ className: "marker-dot", iconSize: [16, 16] }),
           })
-            .addTo(map)
+            .addTo(routes)
             .bindPopup(popup);
           bounds.extend([wp.lat, wp.lng]);
         }
+        for (const wp of post.waypoints ?? []) {
+          heatPoints.push([wp.lat, wp.lng, 1]);
+        }
       }
+
+      heatRef.current = L.heatLayer(heatPoints, {
+        radius: 22,
+        blur: 18,
+        maxZoom: 13,
+        minOpacity: 0.35,
+      });
 
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
       else map.setView([48.5, 24.5], 7);
+      setReady(true);
     })();
 
     return () => {
       cancelled = true;
       mapRef.current?.remove();
       mapRef.current = null;
+      heatRef.current = null;
+      routesRef.current = null;
+      setReady(false);
     };
   }, [posts, lang]);
 
-  return (
-    <div ref={ref} style={{ height: "70vh" }} className="rounded-xl shadow" />
-  );
+  // перемикання хіт-мапи: показуємо щільність точок замість окремих ліній
+  useEffect(() => {
+    const map = mapRef.current;
+    const heat = heatRef.current;
+    const routes = routesRef.current;
+    if (!ready || !map || !heat || !routes) return;
+    if (showHeat) {
+      routes.remove();
+      heat.addTo(map);
+    } else {
+      heat.remove();
+      routes.addTo(map);
+    }
+  }, [showHeat, ready]);
+
+  return <div ref={ref} style={{ height: "70vh" }} />;
 }
