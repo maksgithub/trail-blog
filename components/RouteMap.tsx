@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import type { Waypoint } from "@/lib/types";
 import { CATEGORY_COLORS, LatLng } from "@/lib/geo";
+import { setupBaseLayers } from "@/lib/map-layers";
+import { WORLD_VIEW } from "@/lib/map-config";
 
 interface Props {
   route: LatLng[] | null;
@@ -37,16 +39,22 @@ export default function RouteMap({
         keyboard: interactive,
       });
       mapRef.current = map;
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
+      setupBaseLayers(L, map, {
+        withControl: interactive,
+        defaultBase: category === "bike" ? "Вело / Cycling" : undefined,
+      });
 
       const color = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.hike;
       const bounds = L.latLngBounds([]);
 
       if (route && route.length > 1) {
-        const line = L.polyline(route, { color, weight: 4 }).addTo(map);
+        const line = L.polyline(route, {
+          color,
+          weight: 4,
+          smoothFactor: 1,
+          lineJoin: "round",
+          lineCap: "round",
+        }).addTo(map);
         bounds.extend(line.getBounds());
         const start = route[0];
         const end = route[route.length - 1];
@@ -74,7 +82,7 @@ export default function RouteMap({
       }
 
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
-      else map.setView([48.5, 24.5], 8); // Карпати за замовчуванням
+      else map.setView(WORLD_VIEW.center, WORLD_VIEW.zoom);
     })();
 
     return () => {

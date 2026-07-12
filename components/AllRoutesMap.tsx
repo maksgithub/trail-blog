@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
 import { CATEGORY_COLORS } from "@/lib/geo";
 import { addLocateControl } from "@/lib/leaflet-locate";
+import { setupBaseLayers } from "@/lib/map-layers";
+import { WORLD_VIEW } from "@/lib/map-config";
 import { useLang, pick } from "@/lib/i18n";
 
 interface Props {
@@ -30,11 +32,7 @@ export default function AllRoutesMap({ posts, showHeat = false }: Props) {
 
       const map = L.map(ref.current);
       mapRef.current = map;
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
-
+      setupBaseLayers(L, map);
       addLocateControl(L, map);
 
       const routes = L.layerGroup().addTo(map);
@@ -52,6 +50,9 @@ export default function AllRoutesMap({ posts, showHeat = false }: Props) {
             color,
             weight: 4,
             opacity: 0.9,
+            smoothFactor: 1,
+            lineJoin: "round",
+            lineCap: "round",
           })
             .addTo(routes)
             .bindPopup(popup);
@@ -81,7 +82,7 @@ export default function AllRoutesMap({ posts, showHeat = false }: Props) {
       });
 
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
-      else map.setView([48.5, 24.5], 7);
+      else map.setView(WORLD_VIEW.center, WORLD_VIEW.zoom);
       setReady(true);
     })();
 
