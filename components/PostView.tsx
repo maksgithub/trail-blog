@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { marked } from "marked";
 import type { Post } from "@/lib/types";
 import RouteMap from "@/components/RouteMap";
+import RouteStops from "@/components/RouteStops";
 import LikeButton from "@/components/LikeButton";
 import Comments from "@/components/Comments";
 import { useLang, pick } from "@/lib/i18n";
@@ -98,6 +99,9 @@ export default function PostView({ post }: { post: Post }) {
               category={post.category}
             />
           </div>
+          {post.waypoints && post.waypoints.length > 0 && (
+            <RouteStops waypoints={post.waypoints} category={post.category} />
+          )}
         </section>
       ) : null}
 
