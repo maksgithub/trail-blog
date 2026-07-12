@@ -5,6 +5,8 @@ import type { Category, Waypoint } from "@/lib/types";
 import { LatLng, parseGpx, routeDistanceKm } from "@/lib/geo";
 import { snapRoute, profileForCategory } from "@/lib/routing";
 import { addLocateControl } from "@/lib/leaflet-locate";
+import { setupBaseLayers } from "@/lib/map-layers";
+import { HOME_BASE, HOME_BASE_LATLNG } from "@/lib/map-config";
 
 interface Props {
   route: LatLng[];
@@ -89,12 +91,10 @@ export default function RouteEditor({
       const L = (await import("leaflet")).default;
       if (cancelled || !ref.current || mapRef.current) return;
 
-      const map = L.map(ref.current).setView([48.5, 24.5], 8);
+      // стартовий вигляд — домашня база (див. NEXT_PUBLIC_HOME_BASE)
+      const map = L.map(ref.current).setView(HOME_BASE_LATLNG, 10);
       mapRef.current = map;
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
+      setupBaseLayers(L, map);
       addLocateControl(L, map);
       layersRef.current = L.layerGroup().addTo(map);
 
@@ -175,6 +175,13 @@ export default function RouteEditor({
     onRouteChange(prev ?? routeRef.current.slice(0, -1));
   };
 
+  // почати маршрут із домашньої бази
+  const startFromBase = async () => {
+    if (routing) return;
+    setRouteWithHistory([HOME_BASE_LATLNG]);
+    mapRef.current?.setView(HOME_BASE_LATLNG, 12);
+  };
+
   // перепрокласти весь наявний маршрут по стежках (після AI чи GPX)
   const snapAll = async () => {
     if (route.length < 2 || routing) return;
@@ -220,6 +227,15 @@ export default function RouteEditor({
           className={btn(mode === "waypoint", "bg-orange-700 text-white")}
         >
           📍 Додати локацію
+        </button>
+        <button
+          type="button"
+          onClick={startFromBase}
+          disabled={routing || route.length > 0}
+          className="px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-40 cursor-pointer transition-colors"
+          title="Поставити першу точку маршруту в домашній базі (налаштовується через NEXT_PUBLIC_HOME_BASE)"
+        >
+          🏠 Старт: {HOME_BASE.name}
         </button>
         <label
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
