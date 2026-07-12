@@ -1,5 +1,6 @@
 import { getSupabase } from "@/lib/supabase";
 import type { Post } from "@/lib/types";
+import { mergeWithBuiltin } from "@/lib/builtin-posts";
 import MapPageClient from "@/components/MapPageClient";
 
 export const dynamic = "force-dynamic";
@@ -11,5 +12,5 @@ export default async function MapPage() {
     .select("*")
     .eq("published", true);
 
-  return <MapPageClient posts={(data as Post[]) ?? []} />;
+  return <MapPageClient posts={mergeWithBuiltin((data as Post[]) ?? [])} />;
 }

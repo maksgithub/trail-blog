@@ -1,24 +1,13 @@
--- ============================================
--- Пост: Кемпінг Camping Jungfrau (Лаутербруннен, Швейцарія)
--- з планом поїздки з Кракова та чеклістом.
--- Виконати в Supabase Dashboard -> SQL Editor.
--- Повторний запуск безпечний (оновить пост за slug).
--- ============================================
+import type { Post } from "@/lib/types";
 
-insert into posts (
-  id, slug, title_uk, title_en, excerpt_uk, excerpt_en,
-  content_uk, content_en, category, days, distance_km,
-  route, waypoints, photos, cover_url, published
-) values (
-  -- фіксований id: збігається з вбудованим постом у lib/builtin-posts.ts,
-  -- щоб лайки, поставлені до сідування, лишалися чинними
-  'b7e6a3d0-91c4-4f5a-8f2e-6c1d2a9b4e77',
-  'camping-jungfrau',
-  'Кемпінг Camping Jungfrau у долині Лаутербруннен',
-  'Camping Jungfrau in the Lauterbrunnen valley',
-  'Кемпінг біля підніжжя Юнгфрау серед 72 водоспадів долини Лаутербруннен — з планом автоподорожі з Кракова та чеклістом спорядження.',
-  'A campsite at the foot of the Jungfrau among the 72 waterfalls of the Lauterbrunnen valley — with a road-trip plan from Krakow and a packing checklist.',
-  $uk$## Опис
+/**
+ * Вбудовані пости: показуються на сайті навіть без рядка в базі даних.
+ * Коли в Supabase з'являється пост із таким самим slug (див.
+ * supabase/seed-camping-jungfrau.sql), пріоритет має версія з бази —
+ * тоді працюють лайки й коментарі, а пост можна редагувати в адмінці.
+ */
+
+const JUNGFRAU_CONTENT_UK = `## Опис
 
 **Camping Jungfrau Holiday Park** — легендарний кемпінг у кінці долини Лаутербруннен, просто під стіною водоспаду Штауббах. З намету видно засніжені вершини Юнгфрау, Мьонха та Айґера. На території — магазин, ресторан, кухня, пральня, дитячий майданчик і Wi-Fi; працює цілий рік. Орієнтовна ціна — від 18 CHF за дорослого плюс місце під намет. Влітку обов'язково бронюйте заздалегідь.
 
@@ -58,8 +47,9 @@ insert into posts (
 - Ціни в Швейцарії високі — закупіться в німецьких супермаркетах дорогою або в Coop/Migros в Інтерлакені.
 - Через Німеччину автобани безплатні, тож маршрут через Нюрнберг і Штутгарт вигідніший за австрійський.
 - У долині часто дощить навіть улітку — водоспади від цього лише гарнішають, але тент обов'язковий.
-- Тихі години в кемпінгу з 22:00 — сусіди тут висипаються перед горами.$uk$,
-  $en$## About
+- Тихі години в кемпінгу з 22:00 — сусіди тут висипаються перед горами.`;
+
+const JUNGFRAU_CONTENT_EN = `## About
 
 **Camping Jungfrau Holiday Park** is a legendary campsite at the end of the Lauterbrunnen valley, right under the Staubbach falls. From your tent you can see the snowy peaks of the Jungfrau, Mönch and Eiger. On site: a shop, restaurant, kitchen, laundry, playground and Wi-Fi; open year round. Approximate price — from CHF 18 per adult plus a pitch. Book well ahead in summer.
 
@@ -99,32 +89,65 @@ By car ≈ 1350 km, best split into 5 days:
 - Switzerland is expensive — stock up in German supermarkets on the way or at Coop/Migros in Interlaken.
 - German autobahns are toll-free, so the route via Nuremberg and Stuttgart beats the Austrian one.
 - It often rains in the valley even in summer — the waterfalls only get prettier, but a tarp is a must.
-- Quiet hours from 22:00 — your neighbours are resting before the mountains.$en$,
-  'camp',
-  5,
-  1350,
-  '[[50.0647,19.9450],[50.2649,19.0238],[49.8209,18.2625],[49.5938,17.2509],[49.1951,16.6068],[49.3961,15.5912],[50.0755,14.4378],[49.7384,13.3736],[49.4521,11.0767],[48.7758,9.1829],[47.3769,8.5417],[46.9480,7.4474],[46.7580,7.6280],[46.6863,7.8632],[46.5877,7.9036]]'::jsonb,
-  '[
-    {"lat":46.5877,"lng":7.9036,"title":"Кемпінг Camping Jungfrau"},
-    {"lat":49.4521,"lng":11.0767,"title":"Нюрнберг — ночівля дорогою"},
-    {"lat":46.5936,"lng":7.9059,"title":"Водоспад Штауббах"},
-    {"lat":46.5703,"lng":7.9155,"title":"Водоспади Трюммельбах"},
-    {"lat":46.6863,"lng":7.8632,"title":"Інтерлакен"}
-  ]'::jsonb,
-  '[]'::jsonb,
-  null,
-  true
-)
-on conflict (slug) do update set
-  title_uk = excluded.title_uk,
-  title_en = excluded.title_en,
-  excerpt_uk = excluded.excerpt_uk,
-  excerpt_en = excluded.excerpt_en,
-  content_uk = excluded.content_uk,
-  content_en = excluded.content_en,
-  category = excluded.category,
-  days = excluded.days,
-  distance_km = excluded.distance_km,
-  route = excluded.route,
-  waypoints = excluded.waypoints,
-  published = excluded.published;
+- Quiet hours from 22:00 — your neighbours are resting before the mountains.`;
+
+export const BUILTIN_POSTS: Post[] = [
+  {
+    // той самий id, що й у supabase/seed-camping-jungfrau.sql
+    id: "b7e6a3d0-91c4-4f5a-8f2e-6c1d2a9b4e77",
+    slug: "camping-jungfrau",
+    title_uk: "Кемпінг Camping Jungfrau у долині Лаутербруннен",
+    title_en: "Camping Jungfrau in the Lauterbrunnen valley",
+    excerpt_uk:
+      "Кемпінг біля підніжжя Юнгфрау серед 72 водоспадів долини Лаутербруннен — з планом автоподорожі з Кракова та чеклістом спорядження.",
+    excerpt_en:
+      "A campsite at the foot of the Jungfrau among the 72 waterfalls of the Lauterbrunnen valley — with a road-trip plan from Krakow and a packing checklist.",
+    content_uk: JUNGFRAU_CONTENT_UK,
+    content_en: JUNGFRAU_CONTENT_EN,
+    category: "camp",
+    days: 5,
+    distance_km: 1350,
+    route: [
+      [50.0647, 19.945],
+      [50.2649, 19.0238],
+      [49.8209, 18.2625],
+      [49.5938, 17.2509],
+      [49.1951, 16.6068],
+      [49.3961, 15.5912],
+      [50.0755, 14.4378],
+      [49.7384, 13.3736],
+      [49.4521, 11.0767],
+      [48.7758, 9.1829],
+      [47.3769, 8.5417],
+      [46.948, 7.4474],
+      [46.758, 7.628],
+      [46.6863, 7.8632],
+      [46.5877, 7.9036],
+    ],
+    waypoints: [
+      { lat: 46.5877, lng: 7.9036, title: "Кемпінг Camping Jungfrau" },
+      { lat: 49.4521, lng: 11.0767, title: "Нюрнберг — ночівля дорогою" },
+      { lat: 46.5936, lng: 7.9059, title: "Водоспад Штауббах" },
+      { lat: 46.5703, lng: 7.9155, title: "Водоспади Трюммельбах" },
+      { lat: 46.6863, lng: 7.8632, title: "Інтерлакен" },
+    ],
+    photos: [],
+    cover_url: null,
+    published: true,
+    created_at: "2026-07-12T09:00:00Z",
+  },
+];
+
+/** Об'єднує пости з бази із вбудованими: база має пріоритет за slug */
+export function mergeWithBuiltin(dbPosts: Post[]): Post[] {
+  const slugs = new Set(dbPosts.map((p) => p.slug));
+  const extra = BUILTIN_POSTS.filter((p) => !slugs.has(p.slug));
+  return [...dbPosts, ...extra].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+export function findBuiltinPost(slug: string): Post | undefined {
+  return BUILTIN_POSTS.find((p) => p.slug === slug);
+}
