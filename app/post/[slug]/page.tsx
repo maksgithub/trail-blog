@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import type { Post } from "@/lib/types";
+import { findBuiltinPost } from "@/lib/builtin-posts";
 import PostView from "@/components/PostView";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export default async function PostPage({
     .eq("published", true)
     .single();
 
-  if (!data) notFound();
-  return <PostView post={data as Post} />;
+  const post = (data as Post | null) ?? findBuiltinPost(slug);
+  if (!post) notFound();
+  return <PostView post={post} />;
 }
