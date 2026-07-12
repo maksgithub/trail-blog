@@ -75,9 +75,10 @@ export function createTrailsOverlay(
 export function setupBaseLayers(
   L: typeof Leaflet,
   map: Leaflet.Map,
-  { withControl = true, defaultBase = DEFAULT_BASE }: {
+  { withControl = true, defaultBase = DEFAULT_BASE, controlPosition = "topright" }: {
     withControl?: boolean;
     defaultBase?: string;
+    controlPosition?: Leaflet.ControlPosition;
   } = {}
 ) {
   const bases = createBaseLayers(L);
@@ -92,7 +93,7 @@ export function setupBaseLayers(
 
   if (withControl) {
     L.control
-      .layers(bases, createTrailsOverlay(L), { position: "topright" })
+      .layers(bases, createTrailsOverlay(L), { position: controlPosition })
       .addTo(map);
     map.on("baselayerchange", (e: Leaflet.LayersControlEvent) => {
       try {

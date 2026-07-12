@@ -6,12 +6,19 @@ import { CATEGORY_COLORS, LatLng } from "@/lib/geo";
 import { setupBaseLayers } from "@/lib/map-layers";
 import { WORLD_VIEW } from "@/lib/map-config";
 
+/** API для зовнішніх віджетів (картки точок над картою) */
+export interface RouteMapApi {
+  focusWaypoint: (index: number) => void;
+}
+
 interface Props {
   route: LatLng[] | null;
   waypoints?: Waypoint[] | null;
   category?: string;
   height?: string;
   interactive?: boolean;
+  /** Коли задано, контроли переїжджають донизу, звільняючи місце під картки */
+  apiRef?: React.MutableRefObject<RouteMapApi | null>;
 }
 
 export default function RouteMap({
@@ -20,6 +27,7 @@ export default function RouteMap({
   category = "hike",
   height = "420px",
   interactive = true,
+  apiRef,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -30,18 +38,23 @@ export default function RouteMap({
       const L = (await import("leaflet")).default;
       if (cancelled || !ref.current || mapRef.current) return;
 
+      const controlsAtBottom = Boolean(apiRef);
       const map = L.map(ref.current, {
         scrollWheelZoom: false,
         dragging: interactive,
-        zoomControl: interactive,
+        zoomControl: interactive && !controlsAtBottom,
         doubleClickZoom: interactive,
         touchZoom: interactive,
         keyboard: interactive,
       });
       mapRef.current = map;
+      if (interactive && controlsAtBottom) {
+        L.control.zoom({ position: "bottomleft" }).addTo(map);
+      }
       setupBaseLayers(L, map, {
         withControl: interactive,
         defaultBase: category === "bike" ? "Вело / Cycling" : undefined,
+        controlPosition: controlsAtBottom ? "bottomright" : "topright",
       });
 
       const color = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.hike;
@@ -70,6 +83,7 @@ export default function RouteMap({
           .bindPopup("Фініш / Finish");
       }
 
+      const wpMarkers: import("leaflet").Marker[] = [];
       (waypoints ?? []).forEach((wp, i) => {
         const m = L.marker([wp.lat, wp.lng], {
           icon: L.divIcon({
@@ -89,8 +103,25 @@ export default function RouteMap({
         m.bindPopup(
           `<b>${wp.title}</b>${img}<br/><a href="${gmaps}" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>`
         );
+        wpMarkers.push(m);
         bounds.extend([wp.lat, wp.lng]);
       });
+
+      if (apiRef) {
+        apiRef.current = {
+          focusWaypoint(index: number) {
+            const m = wpMarkers[index];
+            const wp = (waypoints ?? [])[index];
+            if (!m || !wp || !mapRef.current) return;
+            mapRef.current.flyTo(
+              [wp.lat, wp.lng],
+              Math.max(mapRef.current.getZoom(), 13),
+              { duration: 0.8 }
+            );
+            m.openPopup();
+          },
+        };
+      }
 
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
       else map.setView(WORLD_VIEW.center, WORLD_VIEW.zoom);
@@ -98,9 +129,11 @@ export default function RouteMap({
 
     return () => {
       cancelled = true;
+      if (apiRef) apiRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route, waypoints, category, interactive]);
 
   return <div ref={ref} style={{ height }} />;
