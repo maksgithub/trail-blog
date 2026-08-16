@@ -41,7 +41,7 @@ export function parseGpx(xml: string): LatLng[] {
 
 export const CATEGORY_COLORS: Record<string, string> = {
   hike: "#e11d48",
-  bike: "#c2410c",
-  camp: "#1d4ed8",
-  other: "#6b21a8",
+  bike: "#2563eb",
+  camp: "#7c3aed",
+  other: "#0891b2",
 };

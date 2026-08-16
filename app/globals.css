@@ -2,13 +2,15 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --forest: #2d5a3d;
-  --forest-dark: #1e3d29;
-  --forest-light: #eaf3ed;
-  --ig-bg: #fafafa;
-  --ig-border: #dbdbdb;
-  --ink: #262626;
-  --ink-soft: #737373;
+  /* Тепла «експедиційна» гама: пісочний папір + теракотовий акцент.
+     Імена --forest/--ig-* історичні — значення повністю нові. */
+  --forest: #c2410c; /* акцент: теракота */
+  --forest-dark: #9a3412;
+  --forest-light: #ffedd5;
+  --ig-bg: #f6f1e8; /* тло: теплий пісок */
+  --ig-border: #e7dcc8;
+  --ink: #2b2118;
+  --ink-soft: #8a7b66;
 }
 
 html {
@@ -35,34 +37,19 @@ body {
   border-radius: 4px;
 }
 
-.logo-script {
-  font-family: "Snell Roundhand", "Segoe Script", "Brush Script MT", cursive;
-  font-weight: 700;
-}
-
-.story-ring {
-  background: conic-gradient(
-    from 210deg,
-    #f9ce34,
-    #ee2a7b,
-    #6228d7,
-    #f9ce34
-  );
-}
-
 /* ---------- cards & chips ---------- */
 
 .feed-card {
   background: white;
   border: 1px solid var(--ig-border);
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(94, 66, 33, 0.06);
   transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .feed-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(94, 66, 33, 0.12);
 }
 
 .meta-chip {
@@ -117,7 +104,7 @@ body {
 .input-field:focus {
   outline: none;
   border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.12);
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.15);
 }
 
 /* ---------- leaflet ---------- */
@@ -261,7 +248,7 @@ body {
 .prose-content li:has(> input[type="checkbox"]:checked) {
   color: var(--ink-soft);
   text-decoration: line-through;
-  text-decoration-color: rgba(45, 90, 61, 0.5);
+  text-decoration-color: rgba(194, 65, 12, 0.5);
 }
 
 /* ---------- animations ---------- */
