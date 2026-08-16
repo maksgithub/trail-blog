@@ -6,8 +6,9 @@ import type { Category, Post } from "@/lib/types";
 import { useLang, pick } from "@/lib/i18n";
 import { getSupabase } from "@/lib/supabase";
 import { getFingerprint } from "@/lib/fingerprint";
+import { CATEGORY_COLORS } from "@/lib/geo";
 import RouteMap from "@/components/RouteMap";
-import { HeartIcon, CommentIcon, ShareIcon } from "@/components/icons";
+import { HeartIcon, CommentIcon, ShareIcon, CalendarIcon, RulerIcon } from "@/components/icons";
 
 const CATS: (Category | "all")[] = ["all", "hike", "bike", "camp", "other"];
 const CAT_EMOJI: Record<string, string> = {
@@ -43,6 +44,7 @@ function FeedCard({
   const liked = counts.likedByMe.has(post.id);
   const likeCount = counts.likes[post.id] ?? 0;
   const commentCount = counts.comments[post.id] ?? 0;
+  const catColor = CATEGORY_COLORS[post.category] ?? "#0891b2";
 
   const like = () => {
     onToggleLike(post.id);
@@ -50,7 +52,7 @@ function FeedCard({
     setTimeout(() => setPop(false), 350);
   };
 
-  // double-tap on the photo likes (never unlikes), like Instagram
+  // подвійний тап по фото лайкає (ніколи не знімає лайк)
   const doubleTapLike = () => {
     if (!liked) onToggleLike(post.id);
     setBurst(true);
@@ -74,26 +76,24 @@ function FeedCard({
 
   return (
     <article className="feed-card fade-up">
-      {/* header */}
-      <div className="flex items-center gap-3 px-3.5 py-2.5">
-        <div className="story-ring rounded-full p-[2px]">
-          <div className="bg-white rounded-full p-[2px]">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--forest)] to-[var(--forest-dark)] flex items-center justify-center text-base">
-              {CAT_EMOJI[post.category]}
-            </div>
-          </div>
-        </div>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold">{t("site.handle")}</div>
-          <div className="text-xs text-gray-500">
-            {t(`cat.${post.category}` as Parameters<typeof t>[0])}
-            {post.days ? ` · ${post.days} ${t("post.days")}` : ""}
-            {post.distance_km ? ` · ${post.distance_km} ${t("post.km")}` : ""}
-          </div>
-        </div>
+      {/* заголовок картки: категорія + дата */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2.5">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+          style={{ background: `${catColor}15`, color: catColor }}
+        >
+          {CAT_EMOJI[post.category]}{" "}
+          {t(`cat.${post.category}` as Parameters<typeof t>[0])}
+        </span>
+        <time className="text-[11px] uppercase tracking-wide text-[var(--ink-soft)]">
+          {new Date(post.created_at).toLocaleDateString(
+            lang === "uk" ? "uk-UA" : "en-GB",
+            { day: "numeric", month: "long", year: "numeric" }
+          )}
+        </time>
       </div>
 
-      {/* media */}
+      {/* медіа з бейджами метрик поверх */}
       <Link
         href={`/post/${post.slug}`}
         className="block relative group"
@@ -109,10 +109,10 @@ function FeedCard({
               src={post.cover_url}
               alt={title}
               loading="lazy"
-              className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              className="w-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
           ) : post.route?.length || post.waypoints?.length ? (
-            <div className="aspect-square pointer-events-none">
+            <div className="aspect-[4/3] pointer-events-none">
               <RouteMap
                 route={post.route}
                 waypoints={post.waypoints}
@@ -122,11 +122,32 @@ function FeedCard({
               />
             </div>
           ) : (
-            <div className="aspect-square bg-gradient-to-br from-[var(--forest)] to-[var(--forest-dark)] flex items-center justify-center text-7xl">
+            <div
+              className="aspect-[4/3] flex items-center justify-center text-7xl"
+              style={{
+                background: `linear-gradient(135deg, ${catColor}cc, ${catColor})`,
+              }}
+            >
               {CAT_EMOJI[post.category]}
             </div>
           )}
         </div>
+        {(post.days || post.distance_km) && (
+          <div className="absolute bottom-2.5 left-2.5 flex gap-1.5 pointer-events-none">
+            {post.days ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-white">
+                <CalendarIcon className="w-3 h-3" />
+                {post.days} {t("post.days")}
+              </span>
+            ) : null}
+            {post.distance_km ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-white">
+                <RulerIcon className="w-3 h-3" />
+                {post.distance_km} {t("post.km")}
+              </span>
+            ) : null}
+          </div>
+        )}
         {burst && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <HeartIcon className="w-24 h-24 heart-burst drop-shadow-lg" filled />
@@ -134,72 +155,60 @@ function FeedCard({
         )}
       </Link>
 
-      {/* actions */}
-      <div className="px-3 pt-2.5 pb-1 flex items-center gap-1">
-        <button
-          onClick={like}
-          className={`p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
-            pop ? "heart-pop" : ""
-          }`}
-          aria-label={t("likes.like")}
-          aria-pressed={liked}
-        >
-          <HeartIcon
-            className={`w-6 h-6 transition-colors ${liked ? "" : "hover:text-gray-500"}`}
-            filled={liked}
-          />
-        </button>
-        <Link
-          href={`/post/${post.slug}#comments`}
-          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-          aria-label={t("comments.title")}
-        >
-          <CommentIcon className="w-6 h-6" />
+      {/* тіло: заголовок → опис → дії */}
+      <div className="px-4 pt-3 pb-4">
+        <Link href={`/post/${post.slug}`}>
+          <h2 className="text-lg font-bold tracking-tight leading-snug hover:text-[var(--forest)] transition-colors">
+            {title}
+          </h2>
         </Link>
-        <button
-          onClick={share}
-          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-          aria-label="Share"
-        >
-          <ShareIcon className="w-6 h-6" />
-        </button>
-        {copied && (
-          <span className="text-xs text-[var(--forest)] font-medium fade-up">
-            {t("share.copied")}
-          </span>
+        {excerpt && (
+          <p className="text-sm text-[var(--ink-soft)] mt-1 line-clamp-2">
+            {excerpt}
+          </p>
         )}
-      </div>
-
-      {/* likes + caption */}
-      <div className="px-3.5 pb-3.5 text-sm space-y-1">
-        <div className="font-semibold">
-          {likeCount} {t("likes.count")}
+        <div className="flex items-center gap-0.5 mt-3 -ml-1.5">
+          <button
+            onClick={like}
+            className={`p-1.5 rounded-lg hover:bg-black/5 transition-colors cursor-pointer ${
+              pop ? "heart-pop" : ""
+            }`}
+            aria-label={t("likes.like")}
+            aria-pressed={liked}
+          >
+            <HeartIcon className="w-6 h-6" filled={liked} />
+          </button>
+          <Link
+            href={`/post/${post.slug}#comments`}
+            className="p-1.5 rounded-lg hover:bg-black/5 transition-colors"
+            aria-label={t("comments.title")}
+          >
+            <CommentIcon className="w-6 h-6" />
+          </Link>
+          <button
+            onClick={share}
+            className="p-1.5 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
+            aria-label="Share"
+          >
+            <ShareIcon className="w-6 h-6" />
+          </button>
+          {copied && (
+            <span className="text-xs text-[var(--forest)] font-medium fade-up">
+              {t("share.copied")}
+            </span>
+          )}
+          <span className="ml-auto text-sm font-semibold">
+            {likeCount} {t("likes.count")}
+          </span>
         </div>
-        <div>
-          <span className="font-semibold mr-1.5">{t("site.handle")}</span>
-          <span className="font-semibold">{title}.</span>{" "}
-          <span className="text-gray-800">{excerpt}</span>
-        </div>
-        <Link
-          href={`/post/${post.slug}`}
-          className="text-[var(--forest)] font-medium inline-block hover:text-[var(--forest-dark)] transition-colors"
-        >
-          {t("post.readMore")} →
-        </Link>
         {commentCount > 0 && (
           <Link
             href={`/post/${post.slug}#comments`}
-            className="text-gray-500 block hover:text-gray-700 transition-colors"
+            className="block mt-1.5 text-sm text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors"
           >
             {t("comments.view")} ({commentCount})
           </Link>
         )}
-        <div className="text-[11px] text-gray-400 uppercase tracking-wide pt-1">
-          {new Date(post.created_at).toLocaleDateString(
-            lang === "uk" ? "uk-UA" : "en-GB",
-            { day: "numeric", month: "long", year: "numeric" }
-          )}
-        </div>
       </div>
     </article>
   );
@@ -259,34 +268,21 @@ export default function PostList({ posts }: { posts: Post[] }) {
   const filtered = cat === "all" ? posts : posts.filter((p) => p.category === cat);
 
   return (
-    <div className="max-w-[470px] mx-auto">
-      {/* stories-style категорії */}
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 justify-center">
+    <div className="max-w-[520px] mx-auto">
+      {/* фільтри-пігулки категорій */}
+      <div className="flex gap-2 overflow-x-auto pb-5 pt-1 sm:justify-center">
         {CATS.map((c) => (
           <button
             key={c}
             onClick={() => setCat(c)}
-            className="flex flex-col items-center gap-1 cursor-pointer shrink-0 group"
             aria-pressed={cat === c}
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-colors cursor-pointer ${
+              cat === c
+                ? "bg-[var(--ink)] text-white border-transparent"
+                : "bg-white border-[var(--ig-border)] hover:border-[var(--ink-soft)]"
+            }`}
           >
-            <div
-              className={`rounded-full p-[2.5px] transition-transform group-hover:scale-105 group-active:scale-95 ${
-                cat === c ? "story-ring" : "bg-[var(--ig-border)]"
-              }`}
-            >
-              <div className="bg-[var(--ig-bg)] rounded-full p-[2px]">
-                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-2xl shadow-sm">
-                  {CAT_EMOJI[c]}
-                </div>
-              </div>
-            </div>
-            <span
-              className={`text-xs transition-colors ${
-                cat === c ? "text-[var(--ink)] font-semibold" : "text-gray-600"
-              }`}
-            >
-              {t(`cat.${c}` as Parameters<typeof t>[0])}
-            </span>
+            {CAT_EMOJI[c]} {t(`cat.${c}` as Parameters<typeof t>[0])}
           </button>
         ))}
       </div>
@@ -294,7 +290,7 @@ export default function PostList({ posts }: { posts: Post[] }) {
       {filtered.length === 0 && (
         <div className="text-center py-16 fade-up">
           <div className="text-5xl mb-3">🌲</div>
-          <p className="text-gray-500">{t("empty.posts")}</p>
+          <p className="text-[var(--ink-soft)]">{t("empty.posts")}</p>
         </div>
       )}
 

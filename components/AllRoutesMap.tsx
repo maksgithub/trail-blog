@@ -42,7 +42,7 @@ export default function AllRoutesMap({ posts, showHeat = false }: Props) {
       const heatPoints: [number, number, number][] = [];
 
       for (const post of posts) {
-        const color = CATEGORY_COLORS[post.category] ?? "#2d5a3d";
+        const color = CATEGORY_COLORS[post.category] ?? "#0891b2";
         const title = pick(lang, post.title_uk, post.title_en);
         const popup = `<a href="/post/${post.slug}" style="font-weight:600;color:${color}">${title} →</a>`;
 

@@ -140,13 +140,13 @@ export default function RouteEditor({
       layers.clearLayers();
 
       if (route.length > 0) {
-        L.polyline(route, { color: "#2d5a3d", weight: 4 }).addTo(layers);
+        L.polyline(route, { color: "#c2410c", weight: 4 }).addTo(layers);
         // маркери лише на початку/кінці — проміжні точки snap-маршруту не редагуються
         for (const i of [0, route.length - 1]) {
           if (i < 0) continue;
           L.circleMarker(route[i], {
             radius: 6,
-            color: "#2d5a3d",
+            color: "#c2410c",
             fillColor: "#fff",
             fillOpacity: 1,
           }).addTo(layers);
